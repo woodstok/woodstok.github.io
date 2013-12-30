@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<link href="/css/style.css" media="screen" rel="stylesheet" type="text/css"></link>
+	<!-- <link href="/css/pygments.css" media="screen" rel="stylesheet" type="text/css"></link> -->
+	<link href="/css/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/css/fonts.css" rel="stylesheet">
+
+<!-- 	<link href="/solarized.css" type="text/css" rel="stylesheet" />
+	<script type="text/javascript" src="/prettify.js"></script>
+ -->
+<link rel="stylesheet" href="/highlight/styles/solarized_dark.css">
+<script src="/highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+	<title>woodstok.io</title>
+</head>
+<body >
+	<div id="links" class="menu">
+		<a href="/">
+			<img src="http://www.gravatar.com/avatar/237754340ebd976abff4a5deb21b242e.png"
+			height="100" width="100" class="avatar" alt="gravatar image" />
+		</a>
+		<ul class="nobullet">
+			<li><a href="/index.html">writing</a></li>
+			<li><a href="/about.html">about</a></li>
+		</ul>
+		<hr>
+	</div>
+	<div id="wrapper">
+		<div id="content">
+			<div class="postdateheading"> Dec 29, 2013 </div>
+			<div class="post">
+
+				<h1 id="tracking-and-understanding-tcp-states">Tracking and Understanding TCP States</h1>
+				<h3 id="irrelevant-background">Irrelevant background</h3>
+				<p>During my computer networks course, I used to hate the person who illustrated the TCP State Transition Diagram.</p>
+				<blockquote>
+					<img src="/images/tcpdiag.gif" height="400" width="400"/>
+				</blockquote>
+				<p>It was just too complicated. I skipped the whole section summarizing that</p>
+				<ol>
+					<li>Something SYN ACK something happens before the client and server establish their connection</li>
+					<li>Something FIN ACK something happens when the connection is about to close</li>
+				</ol>
+				<br>
+				<p>I moved on and joined a networking company ( even though I used to hate the subject. ). One day, a senior colleague of mine told me that he was planning to put up some material that would help others in understanding the TCP State Transistions and needed an extra hand. He had already written some code. His method was pretty cool. He used simple socket programming and iptables to freeze the states at different stages. But we never got around to finish it. So after three years of consistent procrastination, I thought I could give it another try.</p>
+				<p>I realize that the TCP state diagram is a really basic thing to write about, and probably anyone reading this would have a better idea about it than the writer(me). But I believe this a different and hands-on approach, and might <em>just</em> help that one person studying computer networks who is getting frustrated at the picture above, in understanding it better. In addition, it might provide some knowledge about a few networking tools in Linux.</p>
+				<h2 id="before-we-start">Before we start</h2>
+				<p>I did the entire exercise on my Linux vm ( elementaryOS ). Any Linux machine should do fine.  We need to run ss,watch,gcc,ifconfig and iptables commands. iptables and ifconfig commands will require root permission. It might help if you know basic Linux socket programming. Even though I have added some comments in the code, if you feel lost, you can refresh some stuff at 
+					<a href="http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html">Beej's Guide to Network Programming</a>. Its a really good tutorial.</p>
+					<p>Note: <em>shameless tmux promotion</em> : Since we will be running code and scripts on multiple windows, using tmux or screen would be awesome. I use tmux since it has better support for split windows. 
+					</p>
+					<h2 id="setting-up-interfaces">Setting up Interfaces</h2>
+					<p>We need a server and a client , and we need them to talk to each other. Lets assign IP and ports to both of them. I just chose sensible random values here.</p>
+					<ul>
+						<li>Server - 192.168.100.100 Port - 32000</li>
+						<li>Client -  192.168.100.51   Port - 32089</li>
+					</ul>
+					<p>Of course, you could set up two machines (physical/virtual) with the above mentioned IPs, have your server code in one, and the client code in the other. Or, you could just create two alias interfaces on a single system. Like so:</p>
+<pre>
+<code>sudo ifconfig eth0:0 192.168.100.100 up
+sudo ifconfig eth0:1 192.168.100.51  up
+</code></pre>
+					<h2 id="server-code">Server code</h2>
+					<p>You don't have to pay detailed attention to the code. In short the server code does the following</p>
+					<ul>
+						<li>Create a tcp Linux socket</li>
+						<li>Bind it to 192.168.100.100:32000</li>
+						<li>Wait for any clients to connect</li>
+						<li>If any client connects, accept and set up a new connection.</li>
+						<li>Wait for user input to exit</li>
+						<li>Close the socket and connection </li>
+					</ul>
+<pre><code>
+   int  listen_fd, conn_fd;  
+   struct sockaddr_in serv_addr ,cli_addr;
+   int cli_len , n = 0 ;
+   char mesg[256]; 
+
+   // create a TCP socket
+   listen_fd=socket(AF_INET,SOCK_STREAM,0);
+
+   bzero(&serv_addr,sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   // convert dotted ipaddress to unsigned int
+   serv_addr.sin_addr.s_addr=inet_addr(SERVER_IP_ADDRESS);   
+   serv_addr.sin_port=htons(SERVER_PORT);
+
+
+   //bind the socket to the server:port
+   bind(listen_fd,(struct sockaddr *)&serv_addr,sizeof(serv_addr))
+
+   //make the socket ready of incoming connections
+   listen(listen_fd,10)
+ 
+   //we get a new socket_fd for use with send and recv
+   //while listen_fd can be used to accept() more new connections(max 10)
+   conn_fd = accept(listen_fd,(struct sockaddr *)&cli_addr, &cli_len);
+
+
+   printf ( "\n************ Press any key to exit  \n ");
+   getchar();
+   close(listen_fd);
+					</code></pre>
+					<p>Compile the code</p>
+					<pre><code>gcc -o server server.c
+					</code></pre>
+					<p>Run the code</p>
+					<pre><code>./server
+					</code></pre>
+					<p>Now we have a simple server waiting for clients to connect to it.</p>
+					<h2 id="monitoring-tcp-state">Monitoring TCP State</h2>
+					<p><code>ss</code>  is  utility to monitor sockets. Here is a small bash script  <code>server-state.sh</code> that will display the states for our client and server</p>
+<pre class="prettyprint linenums">
+<code>ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.100"
+ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
+</code></pre>
+					<p>We can repeat this command every second by running</p>
+					<pre><code>watch -n 1 ./server-state.sh
+					</code></pre>
+					<p>Lets keep this running in a separate shell throughout the tutorial.Since we have only the server running, you should see </p>
+					<pre><code>ip:port = 192.168.100.100:32000  State = LISTEN
+					</code></pre>
+					<h2 id="client-and-server">Client and Server</h2>
+					<p><code>client.c</code> is not much different from <code>server.c</code>. It connects to the server that we have started previously. Lets run compile and run <code>client.c</code> in a separate shell.</p>
+					<pre><code>gcc -o client.c client
+						./client
+					</code></pre>
+					<p>Right now, the TCP states should be (from your server-state.sh shell)</p>
+					<blockquote>
+						<p>server - ESTAB
+							client  - ESTAB</p>
+						</blockquote>
+						<p>Which means that both the server and client code have established their tcp connection and are ready to talk to each other. If you look at the diagram, ESTABLISHED is the central state . At this point, a proper working program would have code to <code>send()</code> and <code>recv()</code> functions to transfer messages using TCP. </p>
+						<h2 id="looking-at-the-states-step-by-step">Looking at the States step by step</h2>
+						<p>As soon as we ran the <code>client</code> we saw both the server and client going to ESTABLISHED state. Both the server and client went through the intermediate states in the diagram pretty quickly. </p>
+						<p><em>Note: For each transition arrow in the diagram, the part before the <code>/</code> was what triggered that transition, and the part after the <code>/</code> is what that is sent out during that transition.
+							eg: For the arrow from ESTABLISHED to CLOSE_WAIT, the label is FIN/ACK which means, if the socket which is in ESTABLISHED state receives a FIN, it moves to CLOSE_WAIT and sends out an ACK as part of this transition</em></p>
+							<p>From the initial CLOSED state, here is what could have happened. </p>
+							<ol>
+								<li>With the listen() function call, the server moved to LISTEN state.</li>
+								<li>
+									<p>connect() function call in client.c moved the client from CLOSED to SYN_SENT state. Client sends a SYN as part of this transition.</p>
+								</li>
+								<li>
+									<p>server gets this SYN, changes from LISTEN to SYN_RCVD and sends out a SYN+ACK.</p>
+								</li>
+								<li>client gets this SYN+ACK, moves from SYN_SENT to ESTABLISHED and sends out an ACK.</li>
+								<li>server gets this ACK. Moves from SYN_RCVD to ESTABLISHED.</li>
+							</ol>
+							<h2 id="syn_sent-state">SYN_SENT state</h2>
+							<p>We already saw the server at LISTEN state before the client was started.
+								Lets try to catch the client at the SYN_SENT state. In order to do that, we are going to block the initial SYN packet from the client. If we block the SYN, we break the chain and the client remains at SYN_SENT state. To block packets with specific TCP flags, we will use a command called <code>iptables</code>. <code>iptables</code> helps a user (with root permission) to configure the Linux Kernel firewall.</p>
+								<p><em>NOTE: Since we might be doing this a lot, login to a separate shell as root instead of prepending <code>sudo</code> to every iptables command that we are going to execute.</em></p>
+								<pre><code>iptables -A INPUT -s 192.168.100.51  -p tcp --tcp-flags SYN SYN -j DROP
+								</code></pre>
+								<p>The command takes in all INPUT packets from source 192.168.100.51 (our client) , with protocol TCP, and TCP flag SYN and DROPS them. </p>
+								<p>Once this rule is set, lets start the server and the client. As you will see, </p>
+								<blockquote>
+									<p>server - LISTEN 
+										client - SYN_SENT</p>
+									</blockquote>
+									<p>Remove the SYN rule that you had added in <code>iptables</code>. </p>
+									<pre><code>iptables -D INPUT 1
+									</code></pre>
+									<p>The command assumes that you did not have any other rules preconfigured in ur iptables. If you did, change the number to match the rule number when you display it using <code>iptables -L</code>. You can stop the server and client and wait for the states to return to normal.</p>
+									<h2 id="syn_rcvd">SYN_RCVD</h2>
+									<p>Lets look at the SYN_RCVD state. We block the SYN+ACK from server to freeze the server socket in the SYN_RCVD state. </p>
+									<pre><code>iptables -A INPUT -s 192.168.100.100 -p tcp --tcp-flags SYN,ACK SYN,ACK -j DROP
+									</code></pre>
+									<p>When we run the server and client now, we see </p>
+									<blockquote>
+										<p>SERVER = SYN_RECVD
+											CLIENT = SYN_SENT
+										</p>
+									</blockquote>
+									<p>Delete the rule by using <code>iptables -D INPUT 1</code>.</p>
+									<p>You should get the gist by now. We examine the possible sequence from the diagram. Anticipate and block the packet with a particular flag in a direction using iptables command. And then run the server and client and monitor the states.</p>
+									<h2 id="teardown-states">Teardown states</h2>
+									<p>Here is what usually happens during a tcp teardown.</p>
+									<p>Lets assume that client closed first.</p>
+									<pre><code>
+	1.client close()      | client ESTAB       -&gt; FIN_WAIT1 | sends FIN
+	2.server gets     FIN | server ESTAB      -&gt; CLOSE_WAIT | sends ACK
+	3.client gets     ACK | client FIN_WAIT1  -&gt; FIN_WAIT2  |
+	4.server close()      | server CLOSE_WAIT -&gt; LAST_ACK   | sends FIN
+	5.client gets     FIN | client FIN_WAIT2  -&gt; TIME_WAIT  | sends ACK
+	6.server gets     ACK | server LAST_ACK   -&gt; CLOSED     |
+									</code></pre>
+									<p>I leave these states as an exercise.
+									</p>
+									<p>We can repeat the previous steps to observe the teardown states also, but there is a catch. The iptables rule would work well with FIN packet. But if  you are planning to block the ACK packets, make sure you are adding the iptables rule after both the server and client are in the ESTAB state. Both of them are made to wait for user keypress before the close() function is called. So first run server and client, confirm that their states are ESTAB, add the iptables rule, and give a keypress on the client.
+									</p>
+<br><br>
+									<p>Please leave feedback at woodstok@outlook.com</p>
+								</div>
+							</div>
+						</div>
+					</body>
+					</html>
+

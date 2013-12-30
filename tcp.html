@@ -49,6 +49,7 @@
 				<h2 id="before-we-start">Before we start</h2>
 				<p>I did the entire exercise on my Linux vm ( elementaryOS ). Any Linux machine should do fine.  We need to run ss,watch,gcc,ifconfig and iptables commands. iptables and ifconfig commands will require root permission. It might help if you know basic Linux socket programming. Even though I have added some comments in the code, if you feel lost, you can refresh some stuff at 
 					<a href="http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html">Beej's Guide to Network Programming</a>. Its a really good tutorial.</p>
+					<p> Also, you can find the complete code at <a href="https://github.com/woodstok/woodstok-code/tree/master/understanding_tcp">Under Standing TCP states</a></p>
 					<p>Note: <em>shameless tmux promotion</em> : Since we will be running code and scripts on multiple windows, using tmux or screen would be awesome. I use tmux since it has better support for split windows. 
 					</p>
 					<h2 id="setting-up-interfaces">Setting up Interfaces</h2>
@@ -63,7 +64,7 @@
 sudo ifconfig eth0:1 192.168.100.51  up
 </code></pre>
 					<h2 id="server-code">Server code</h2>
-					<p>You don't have to pay detailed attention to the code. In short the server code does the following</p>
+					<p>Lets look at <a href="https://github.com/woodstok/woodstok-code/blob/master/understanding_tcp/server.c">server.c</a>. You don't have to pay detailed attention to the code. In short the server code does the following</p>
 					<ul>
 						<li>Create a tcp Linux socket</li>
 						<li>Bind it to 192.168.100.100:32000</li>
@@ -72,6 +73,7 @@ sudo ifconfig eth0:1 192.168.100.51  up
 						<li>Wait for user input to exit</li>
 						<li>Close the socket and connection </li>
 					</ul>
+
 <pre><code>
    int  listen_fd, conn_fd;  
    struct sockaddr_in serv_addr ,cli_addr;
@@ -112,7 +114,7 @@ sudo ifconfig eth0:1 192.168.100.51  up
 					<p>Now we have a simple server waiting for clients to connect to it.</p>
 					<h2 id="monitoring-tcp-state">Monitoring TCP State</h2>
 					<p><code>ss</code>  is  utility to monitor sockets. Here is a small bash script  <code>server-state.sh</code> that will display the states for our client and server</p>
-<pre class="prettyprint linenums">
+<pre>
 <code>ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.100"
 ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 </code></pre>
@@ -123,7 +125,7 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 					<pre><code>ip:port = 192.168.100.100:32000  State = LISTEN
 					</code></pre>
 					<h2 id="client-and-server">Client and Server</h2>
-					<p><code>client.c</code> is not much different from <code>server.c</code>. It connects to the server that we have started previously. Lets run compile and run <code>client.c</code> in a separate shell.</p>
+					<p><a href="https://github.com/woodstok/woodstok-code/blob/master/understanding_tcp/client.c">client.c</a> is not much different from <code>server.c</code>. It connects to the server that we have started previously. Lets run compile and run <code>client.c</code> in a separate shell.</p>
 					<pre><code>gcc -o client.c client
 						./client
 					</code></pre>

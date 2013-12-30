@@ -146,6 +146,9 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 						</blockquote>
 						<p>Which means that both the server and client code have established their tcp connection and are ready to talk to each other. If you look at the diagram, ESTABLISHED is the central state . At this point, a proper working program would have code to <code>send()</code> and <code>recv()</code> functions to transfer messages using TCP. </p>
 						<h2 id="looking-at-the-states-step-by-step">Looking at the States step by step</h2>
+						<blockquote>
+							<img src="/images/tcpdiag.gif" height="400" width="400"/>
+						</blockquote>
 						<p>As soon as we ran the <code>client</code> we saw both the server and client going to ESTABLISHED state. Both the server and client went through the intermediate states in the diagram pretty quickly. </p>
 						<p><em>Note: For each transition arrow in the diagram, the part before the <code>/</code> was what triggered that transition, and the part after the <code>/</code> is what that is sent out during that transition.
 							eg: For the arrow from ESTABLISHED to CLOSE_WAIT, the label is FIN/ACK which means, if the socket which is in ESTABLISHED state receives a FIN, it moves to CLOSE_WAIT and sends out an ACK as part of this transition</em></p>

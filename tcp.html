@@ -43,7 +43,7 @@
 					<li>Something FIN ACK something happens when the connection is about to close</li>
 				</ol>
 				<br>
-				<p>I moved on and joined a networking company ( even though I used to hate the subject. ). One day, a senior colleague of mine told me that he was planning to put up some material that would help others in understanding the TCP State Transistions and needed an extra hand. He had already written some code. His method was pretty cool. He used simple socket programming and iptables to freeze the states at different stages. But we never got around to finish it. So after three years of consistent procrastination, I thought I could give it another try.</p>
+				<p>I moved on and joined a networking company ( even though I used to hate the subject. ). One day, a senior colleague of mine told me that he was planning to put up some material that would help others in understanding the TCP State Transistions and needed an extra hand. He had already written some code. His method was pretty cool. He used simple socket programming and iptables to freeze the states at different stages. But we never got around to finish it. So after three years of consistent procrastination, I thought I could give it another try.Bottom line, my colleague Ratheesh conceived this article. I just put it up :)</p>
 				<p>I realize that the TCP state diagram is a really basic thing to write about, and probably anyone reading this would have a better idea about it than the writer(me). But I believe this a different and hands-on approach, and might <em>just</em> help that one person studying computer networks who is getting frustrated at the picture above, in understanding it better. In addition, it might provide some knowledge about a few networking tools in Linux.</p>
 				<h2 id="before-we-start">Before we start</h2>
 				<p>I did the entire exercise on my Linux vm ( elementaryOS ). Any Linux machine should do fine.  We need to run ss,watch,gcc,ifconfig and iptables commands. iptables and ifconfig commands will require root permission. It might help if you know basic Linux socket programming. Even though I have added some comments in the code, if you feel lost, you can refresh some stuff at 
@@ -192,7 +192,7 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 									<p>We can repeat the previous steps to observe the teardown states also, but there is a catch. The iptables rule would work well with FIN packet. But if  you are planning to block the ACK packets, make sure you are adding the iptables rule after both the server and client are in the ESTAB state. Both of them are made to wait for user keypress before the close() function is called. So first run server and client, confirm that their states are ESTAB, add the iptables rule, and give a keypress on the client.
 									</p>
 <br><br>
-									<p>Please leave feedback at woodstok@outlook.com</p>
+									<p>This is my first article. I hope i can do more. Please leave feedback at woodstok@outlook.com</p>
 								</div>
 							</div>
 						</div>

@@ -136,13 +136,13 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 					</code></pre>
 					<h2 id="client-and-server">Client and Server</h2>
 					<p><a href="https://github.com/woodstok/woodstok-code/blob/master/understanding_tcp/client.c">client.c</a> is not much different from <code>server.c</code>. It connects to the server that we have started previously. Lets run compile and run <code>client.c</code> in a separate shell.</p>
-					<pre><code>gcc -o client.c client
-						./client
-					</code></pre>
+<pre><code>gcc -o client.c client
+./client
+</code></pre>
 					<p>Right now, the TCP states should be (from your server-state.sh shell)</p>
 					<blockquote>
-						<p>server - ESTAB
-							client  - ESTAB</p>
+						<p>server - ESTAB</br>
+						client  - ESTAB</p>
 						</blockquote>
 						<p>Which means that both the server and client code have established their tcp connection and are ready to talk to each other. If you look at the diagram, ESTABLISHED is the central state . At this point, a proper working program would have code to <code>send()</code> and <code>recv()</code> functions to transfer messages using TCP. </p>
 						<h2 id="looking-at-the-states-step-by-step">Looking at the States step by step</h2>
@@ -154,23 +154,45 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 							eg: For the arrow from ESTABLISHED to CLOSE_WAIT, the label is FIN/ACK which means, if the socket which is in ESTABLISHED state receives a FIN, it moves to CLOSE_WAIT and sends out an ACK as part of this transition</em></p>
 							<p>From the initial CLOSED state, here is what could have happened. </p>
 							<ol>
-								<li>With the listen() function call, the server moved to LISTEN state.</li>
+								
+								<li>With the listen() function call, the server moved to LISTEN state.
+
+								</li>
 								<li>
 									<p>connect() function call in client.c moved the client from CLOSED to SYN_SENT state. Client sends a SYN as part of this transition.</p>
 								</li>
+							
 								<li>
 									<p>server gets this SYN, changes from LISTEN to SYN_RCVD and sends out a SYN+ACK.</p>
 								</li>
+									<blockquote>
+										<img src="/images/step1.png" height="250" width="480"/>
+										<p><em>Note: For these diagrams, server elements are colored blue, and client side is red. Some elements are also numbered corresponding to their step number in this sequence list </em></p>
+									</blockquote>									
 								<li>client gets this SYN+ACK, moves from SYN_SENT to ESTABLISHED and sends out an ACK.</li>
 								<li>server gets this ACK. Moves from SYN_RCVD to ESTABLISHED.</li>
+									<blockquote>
+										<img src="/images/step2.png" height="250" width="480"/>
+
+									</blockquote>									
+
 							</ol>
+							</br>
+							</br>
 							<h2 id="syn_sent-state">SYN_SENT state</h2>
 							<p>We already saw the server at LISTEN state before the client was started.
-								Lets try to catch the client at the SYN_SENT state. In order to do that, we are going to block the initial SYN packet from the client. If we block the SYN, we break the chain and the client remains at SYN_SENT state. To block packets with specific TCP flags, we will use a command called <code>iptables</code>. <code>iptables</code> helps a user (with root permission) to configure the Linux Kernel firewall.</p>
+								Lets try to catch the client at the SYN_SENT state. In order to do that, we are going to block the initial SYN packet from the client. If we block the SYN, we break the chain and the client remains at SYN_SENT state. 
+							</p>
+									<blockquote>
+										<img src="/images/synblocked.png" height="250" width="480"/>
+
+									</blockquote>								
+							<p>
+								To block packets with specific TCP flags, we will use a command called <code>iptables</code>. <code>iptables</code> helps a user (with root permission) to configure the Linux Kernel firewall.</p>
 								<p><em>NOTE: Since we might be doing this a lot, login to a separate shell as root instead of prepending <code>sudo</code> to every iptables command that we are going to execute.</em></p>
 								<pre><code>iptables -A INPUT -s 192.168.100.51  -p tcp --tcp-flags SYN SYN -j DROP
 								</code></pre>
-								<p>The command takes in all INPUT packets from source 192.168.100.51 (our client) , with protocol TCP, and TCP flag SYN and DROPS them. </p>
+								<p>The command takes in all INPUT(incoming) packets from source 192.168.100.51 (our client) , with protocol TCP, and TCP flag SYN and DROPS them. </p>
 								<p>Once this rule is set, lets start the server and the client. As you will see, </p>
 								<blockquote>
 									<p>server - LISTEN 
@@ -178,7 +200,7 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 									</blockquote>
 									<p>Remove the SYN rule that you had added in <code>iptables</code>. </p>
 									<pre><code>iptables -D INPUT 1
-									</code></pre>
+									</code></pre> 	
 									<p>The command assumes that you did not have any other rules preconfigured in ur iptables. If you did, change the number to match the rule number when you display it using <code>iptables -L</code>. You can stop the server and client and wait for the states to return to normal.</p>
 									<h2 id="syn_rcvd">SYN_RCVD</h2>
 									<p>Lets look at the SYN_RCVD state. We block the SYN+ACK from server to freeze the server socket in the SYN_RCVD state. </p>
@@ -196,7 +218,9 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 									<p>Here is what usually happens during a tcp teardown.</p>
 									<p>Lets assume that client closed first.</p>
 									<pre><code>
-	1.client close()      | client ESTAB       -&gt; FIN_WAIT1 | sends FIN
+	Cause                 | Prev State        -&gt; Next State | Action
+	-----------------------------------------------------------------------------   										
+	1.client close()      | client ESTAB      -&gt; FIN_WAIT1  | sends FIN
 	2.server gets     FIN | server ESTAB      -&gt; CLOSE_WAIT | sends ACK
 	3.client gets     ACK | client FIN_WAIT1  -&gt; FIN_WAIT2  |
 	4.server close()      | server CLOSE_WAIT -&gt; LAST_ACK   | sends FIN

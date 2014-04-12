@@ -227,7 +227,7 @@ ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 	5.client gets     FIN | client FIN_WAIT2  -&gt; TIME_WAIT  | sends ACK
 	6.server gets     ACK | server LAST_ACK   -&gt; CLOSED     |
 									</code></pre>
-									<p>I leave these states as an exercise.
+									<p>I leave these states as an exercise. I have also added steps to log the packets filtered through iptables in the readme at <a href="https://github.com/woodstok/woodstok-code/tree/master/understanding_tcp">Understanding TCP</a>
 									</p>
 									<p>We can repeat the previous steps to observe the teardown states also, but there is a catch. The iptables rule would work well with FIN packet. But if  you are planning to block the ACK packets, make sure you are adding the iptables rule after both the server and client are in the ESTAB state. Both of them are made to wait for user keypress before the close() function is called. So first run server and client, confirm that their states are ESTAB, add the iptables rule, and give a keypress on the client.
 									</p>

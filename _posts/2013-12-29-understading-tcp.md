@@ -68,7 +68,8 @@ You don't have to pay detailed attention to the code. In short the server code d
    listen(listen_fd,10)
  
    //we get a new socket_fd for use with send and recv
-   //while listen_fd can be used to accept() more new connections(max 10)
+   //while listen_fd can be used to accept()
+   //more new connections(max 10)
    conn_fd = accept(listen_fd,(struct sockaddr *)&cli_addr, &cli_len);
 
 

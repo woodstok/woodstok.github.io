@@ -28,7 +28,7 @@ We need a server and a client , and we need them to talk to each other. Lets ass
 - Client -  192.168.100.51   Port - 32089
 
 Of course, you could set up two machines (physical/virtual) with the above mentioned IPs, have your server code in one, and the client code in the other. Or, you could just create two alias interfaces on a single system. Like so:
-{% highlight console %}
+{% highlight sh %}
 sudo ifconfig eth0:0 192.168.100.100 up
 sudo ifconfig eth0:1 192.168.100.51  up
 {% endhighlight %}
@@ -80,7 +80,7 @@ You don't have to pay detailed attention to the code. In short the server code d
 
 Compile and run the code
 
-{% highlight console %}
+{% highlight sh %}
 gcc -o server server.c
 ./server
 {% endhighlight %}
@@ -90,23 +90,23 @@ Now we have a simple server waiting for clients to connect to it.
 ## Monitoring the tcp states
 
 `ss` is a utility to monitor sockets. Here is a small bash script  `server-state.sh` that will display the states for our client and server
-{% highlight console %}
+{% highlight sh %}
 ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.100"
 ss -a | awk '{ print "ip:port = " $4  "  State = " $1 }' | grep "192.168.100.51"
 {% endhighlight %}
 We can repeat this command every second by running 
-{% highlight console %}
+{% highlight sh %}
 watch -n 1 ./server-state.sh
 {% endhighlight %}
 Lets keep this running in a separate shell throughout the tutorial.Since we have only the server running, you should see 
-{% highlight console %}
+{% highlight sh %}
 ip:port = 192.168.100.100:32000  State = LISTEN
 {%endhighlight %}
 
 ## Client and Server
 [client.c]( https://github.com/woodstok/woodstok-code/blob/master/understanding_tcp/client.c ) is not much different from `server.c` . It connects to the server that we have started previously. Lets compile and run `client.c` in a separate shell.
 
-{% highlight console %}
+{% highlight sh %}
 gcc -o client.c client
 ./client
 {% endhighlight %}
@@ -148,7 +148,7 @@ To block packets with specific TCP flags, we will use a command called `iptables
 
 *Since we might be doing this a lot, login to a separate shell as root instead of prepending `sudo` to every iptables command that we are going to execute.*
 
-{% highlight console %}
+{% highlight sh %}
 iptables -A INPUT -s 192.168.100.51  -p tcp --tcp-flags SYN SYN -j DROP
 {% endhighlight %}
 
@@ -158,7 +158,7 @@ The command takes in all INPUT( incoming ) packets from source 192.168.100.51 (o
     client - SYN_SENT
 
 Remove the SYN rule that you had added in `iptables`. 
-{% highlight console %}
+{% highlight sh %}
 iptables -D INPUT 1
 {% endhighlight %}
 The command assumes that you did not have any other rules preconfigured in ur iptables. If you did, change the number to match the rule number when you display it using `iptables -L`. You can stop the server and client and wait for the states to get closed. Similarly we can vary the iptables command to block syn+ack from the server, making it to stop at the SYN_RCVD state, and so on. 

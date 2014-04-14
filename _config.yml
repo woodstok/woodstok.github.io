@@ -1,0 +1,24 @@
+# Dependencies
+markdown:         redcarpet
+pygments:         true
+
+# Permalinks
+permalink:        pretty
+
+# Setup
+title:            woodstok
+tagline:          'an incomplete fraction of the whole'
+description:      'here lie my thoughts and attempts on things diverse'
+url:              http://woodstok.github.io
+
+author:
+  name:           'Appu M Joseph'
+  url:            http://woodstok.github.io/about
+
+paginate:         4
+
+# Custom vars
+version:          1.0.0
+
+github:
+  repo:           https://github.com/poole/lanyon

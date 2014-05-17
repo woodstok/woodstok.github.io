@@ -162,7 +162,7 @@ Remove the SYN rule that you had added in `iptables`.
 {% highlight sh %}
 iptables -D INPUT 1
 {% endhighlight %}
-The command assumes that you did not have any other rules preconfigured in ur iptables. If you did, change the number to match the rule number when you display it using `iptables -L`. You can stop the server and client and wait for the states to get closed. Similarly we can vary the iptables command to block syn+ack from the server, making it to stop at the SYN_RCVD state, and so on. 
+The command assumes that you did not have any other rules preconfigured in your iptables. If you did, change the number to match the rule number when you display it using `iptables -L`. You can stop the server and client and wait for the states to get closed. Similarly we can vary the iptables command to block syn+ack from the server, making it to stop at the SYN_RCVD state, and so on. 
 
 
 ## Teardown States
